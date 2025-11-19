@@ -1,0 +1,85 @@
+services:
+  mcp-memory-service:
+    platform: linux/arm64
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: mcp-memory-service
+    restart: unless-stopped
+
+    ports:
+      - "8000:8000"
+
+    volumes:
+      # Persistent database storage (SQLite-vec)
+      - ${MCP_DATA_DIR:-./data}:/app/data
+
+      # Optional: Persist Hugging Face cache (embedding models)
+      # Uncomment if you want to share the model cache with other containers
+      # - ${HOME}/.cache/huggingface:/root/.cache/huggingface:ro
+
+    environment:
+      # Storage backend configuration
+      - MCP_MEMORY_STORAGE_BACKEND=sqlite_vec
+      - MCP_MEMORY_SQLITE_PATH=/app/data/sqlite_vec.db
+      - MCP_MEMORY_BACKUPS_PATH=/app/data/backups
+
+      # HTTP server configuration
+      - MCP_HTTP_ENABLED=true
+      - MCP_HTTP_PORT=8000
+      - MCP_HTTP_HOST=0.0.0.0
+
+      # Embedding configuration
+      - MCP_EMBEDDING_MODEL=all-MiniLM-L6-v2
+      - MCP_MEMORY_USE_ONNX=false
+
+      # Logging
+      - LOG_LEVEL=INFO
+
+      # Optional: Memory consolidation (disable for minimal setup)
+      - MCP_CONSOLIDATION_ENABLED=false
+
+      # Optional: mDNS service discovery (disable in containers)
+      - MCP_MDNS_ENABLED=false
+
+      # Optional: OAuth (disable for simple setup)
+      - MCP_OAUTH_ENABLED=false
+
+      # SQLite pragmas for better concurrency
+      - MCP_MEMORY_SQLITE_PRAGMAS=busy_timeout=15000,journal_mode=WAL
+
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 15s
+
+    # Resource limits (adjust based on your needs)
+    deploy:
+      resources:
+        limits:
+          cpus: '2.0'
+          memory: 2G
+        reservations:
+          cpus: '0.5'
+          memory: 512M
+
+    # Network mode (bridge is default, can use host for better performance)
+    network_mode: bridge
+
+    # Security options
+    security_opt:
+      - no-new-privileges:true
+
+    # Read-only root filesystem (except for volumes)
+    # Uncomment for enhanced security
+    # read_only: true
+    # tmpfs:
+    #   - /tmp
+    #   - /var/tmp
+
+# Optional: Create a named volume instead of bind mount
+# volumes:
+#   mcp-data:
+#     driver: local

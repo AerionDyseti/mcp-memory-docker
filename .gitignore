@@ -1,0 +1,14 @@
+# Cloned repository
+mcp-memory-service/
+
+# Data and volumes
+data/
+
+# Build logs
+*.log
+
+# Docker volumes
+.docker/
+
+# Configuration file (auto-generated)
+config.sh
