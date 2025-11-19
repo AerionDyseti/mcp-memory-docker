@@ -1,0 +1,14 @@
+{
+  "repository": {
+    "url": "https://github.com/doobidoo/mcp-memory-service",
+    "commit": "6a823ab593f5154fed77848523dda54dacb37005",
+    "commit_short": "6a823ab",
+    "branch": "main",
+    "commit_date": "2025-11-18 20:36:16 +0100",
+    "commit_message": "fix: preserve memory_type during Cloudflare-to-SQLite sync (v8.27.2) (#232)"
+  },
+  "build": {
+    "date": "2025-11-19T21:54:50Z",
+    "script_version": "1.0"
+  }
+}

@@ -348,13 +348,33 @@ The service runs in HTTP-only mode with:
 - ✅ Web Dashboard (`/`)
 - ✅ Server-Sent Events (`/api/events`)
 
-### Pre-Downloaded Embeddings
+### Embedding Models & Caching
 
-The embedding model (`all-MiniLM-L6-v2`) is downloaded during the Docker build, not at runtime:
-- ✅ No download delays on container startup
-- ✅ Predictable startup time (2-3 seconds)
-- ✅ Works offline after initial build
-- ✅ Model cached in image (~90MB)
+The service supports multiple embedding backends with efficient caching:
+
+**ONNX Quantized Embeddings (Default)**:
+- ✅ Lightweight quantized ONNX model (~14MB vs 87MB PyTorch)
+- ✅ PyTorch-free inference via ONNX Runtime
+- ✅ Cached on host at `~/.cache/mcp_memory/`
+- ✅ Fast startup with minimal memory footprint
+
+**PyTorch Embeddings (Alternative)**:
+- ✅ Full precision all-MiniLM-L6-v2 model
+- ✅ Cached on host at `~/.cache/huggingface/`
+- ✅ Manage models with `huggingface-cli` on host
+- ✅ Bind-mounted for easy updates
+
+**Cache Management**:
+- Both caches are bind-mounted from your host system
+- Download models on host, immediately available in container
+- Persists between container recreations
+- No network access needed after initial download
+
+**Content Chunking**:
+- ✅ Automatic chunking for long text (>1000 chars)
+- ✅ 1000 character chunks with 200 character overlap
+- ✅ Preserves semantic meaning across chunk boundaries
+- ✅ No data loss for long-form content
 
 ### ARM64 Optimization
 
@@ -368,9 +388,11 @@ The Dockerfile includes custom-compiled `sqlite-vec` for ARM64:
 
 Data storage:
 - **Database**: Persistent SQLite file on host
-- **Location**: Configurable (default: `./data/sqlite_vec.db`)
-- **Backups**: Automatic backups to `data/backups/`
+- **Default Location**: `~/.config/memory-mcp-server/memory.db`
+- **Alternative**: Configure via `docker-compose.yml` volume mount
+- **Backups**: Automatic backups to `backups/` subdirectory
 - **Performance**: ~5ms read/write operations
+- **WAL Mode**: Write-Ahead Logging for better concurrency
 
 ## Environment Variables
 
@@ -380,7 +402,7 @@ The service is configured via environment variables in `docker-compose.yml`:
 environment:
   # Storage backend
   - MCP_MEMORY_STORAGE_BACKEND=sqlite_vec
-  - MCP_MEMORY_SQLITE_PATH=/app/data/sqlite_vec.db
+  - MCP_MEMORY_SQLITE_PATH=/app/data/memory.db
   - MCP_MEMORY_BACKUPS_PATH=/app/data/backups
 
   # HTTP server
@@ -390,7 +412,7 @@ environment:
 
   # Embedding model
   - MCP_EMBEDDING_MODEL=all-MiniLM-L6-v2
-  - MCP_MEMORY_USE_ONNX=false
+  - MCP_MEMORY_USE_ONNX=true  # Use quantized ONNX (default: true)
 
   # Logging
   - LOG_LEVEL=INFO
@@ -482,6 +504,50 @@ git pull                   # Pull latest script changes
 ```
 
 ## Advanced Usage
+
+### Switch Embedding Backend
+
+The service supports two embedding backends:
+
+**ONNX (Default) - Recommended for most users**:
+```yaml
+environment:
+  - MCP_MEMORY_USE_ONNX=true
+```
+- Lightweight quantized model (~14MB)
+- PyTorch-free inference
+- Cached at `~/.cache/mcp_memory/`
+
+**PyTorch - For maximum compatibility**:
+```yaml
+environment:
+  - MCP_MEMORY_USE_ONNX=false
+```
+- Full precision model (~87MB)
+- Uses HuggingFace cache at `~/.cache/huggingface/`
+- Manage models with `huggingface-cli`
+
+After changing, restart the container:
+```bash
+docker-compose restart
+```
+
+### Manage Embedding Models on Host
+
+With bind-mounted caches, you can manage models directly on your host:
+
+```bash
+# List cached models
+ls -lh ~/.cache/huggingface/hub/
+
+# Download a different model (PyTorch mode)
+huggingface-cli download sentence-transformers/all-mpnet-base-v2
+
+# Check ONNX cache
+ls -lh ~/.cache/mcp_memory/onnx_models/
+```
+
+The container will automatically see new models without rebuilding!
 
 ### Change Port
 

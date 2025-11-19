@@ -12,16 +12,18 @@ services:
 
     volumes:
       # Persistent database storage (SQLite-vec)
-      - ${MCP_DATA_DIR:-./data}:/app/data
+      - ${HOME}/.config/memory-mcp-server:/app/data
 
-      # Optional: Persist Hugging Face cache (embedding models)
-      # Uncomment if you want to share the model cache with other containers
-      # - ${HOME}/.cache/huggingface:/root/.cache/huggingface:ro
+      # Bind mount host Hugging Face cache (allows using hf CLI on host)
+      - ${HOME}/.cache/huggingface:/root/.cache/huggingface:ro
+
+      # MCP memory cache (ONNX models from Chroma)
+      - ${HOME}/.cache/mcp_memory:/root/.cache/mcp_memory
 
     environment:
       # Storage backend configuration
       - MCP_MEMORY_STORAGE_BACKEND=sqlite_vec
-      - MCP_MEMORY_SQLITE_PATH=/app/data/sqlite_vec.db
+      - MCP_MEMORY_SQLITE_PATH=/app/data/memory.db
       - MCP_MEMORY_BACKUPS_PATH=/app/data/backups
 
       # HTTP server configuration
@@ -31,7 +33,7 @@ services:
 
       # Embedding configuration
       - MCP_EMBEDDING_MODEL=all-MiniLM-L6-v2
-      - MCP_MEMORY_USE_ONNX=false
+      - MCP_MEMORY_USE_ONNX=true
 
       # Logging
       - LOG_LEVEL=INFO
@@ -79,7 +81,7 @@ services:
     #   - /tmp
     #   - /var/tmp
 
-# Optional: Create a named volume instead of bind mount
+# Named volumes for persistent data
 # volumes:
-#   mcp-data:
+#   huggingface-cache:
 #     driver: local

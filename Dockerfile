@@ -97,6 +97,8 @@ Summary: Custom compiled sqlite-vec for ARM64\n\
 # Now install dependencies - UV will see sqlite-vec is already installed and skip it
 RUN echo "Installing CPU-only PyTorch..." && \
     python -m uv pip install torch --index-url https://download.pytorch.org/whl/cpu && \
+    echo "Installing ONNX Runtime for quantized model support..." && \
+    python -m uv pip install onnxruntime && \
     echo "Installing MCP Memory Service (sqlite-vec already satisfied)..." && \
     python -m uv pip install -e . && \
     echo "Installation complete"
