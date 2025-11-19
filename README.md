@@ -34,8 +34,8 @@ This tool provides a zero-configuration way to run the MCP Memory Service in Doc
 
 1. **Clone this repository**:
    ```bash
-   git clone <this-repo-url>
-   cd memory-docker
+   git clone https://github.com/AerionDyseti/mcp-memory-docker.git
+   cd mcp-memory-docker
    ```
 
 2. **Build and configure**:
